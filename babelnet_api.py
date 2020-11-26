@@ -1,9 +1,19 @@
 from py_babelnet.calls import BabelnetAPI
 
-api = BabelnetAPI('40c0cadc-be6d-47f4-a188-11e899eed2f3')
+
+def get_api_key():
+    with open('./babelnet.key') as f:
+        api_key = f.readline()
+
+    return api_key
+
+
+def get_api():
+    return BabelnetAPI(get_api())
 
 
 def get_synset_ids(lemma, lang):
+    api = get_api()
     res = api.get_synset_ids(lemma=lemma, searchLang=lang)
 
     synset_ids = []
@@ -14,6 +24,7 @@ def get_synset_ids(lemma, lang):
 
 
 def get_glosses(synset_id, lang):
+    api = get_api()
     res = api.get_synset(id=synset_id, targetLang=lang)
 
     glosses = []
