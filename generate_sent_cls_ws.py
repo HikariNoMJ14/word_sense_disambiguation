@@ -8,22 +8,11 @@ glosses = {}
 def generate_auxiliary(train_file_name, train_file_final_name, language):
     train_data = pd.read_csv(train_file_name, sep="\t", na_filter=False).values
 
-    # gold_keys = []
-    # with open(gold_key_file_name, "r", encoding="utf-8") as f:
-    #     s = f.readline().strip()
-    #     while s:
-    #         tmp = s.split()[2:]
-    #         gold_keys.append(tmp)
-    #         s = f.readline().strip()
-
     with open(train_file_final_name, "w", encoding="utf-8") as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
         num = 0
         for i in range(len(train_data)):
-            assert train_data[i][-2] == "N" \
-                   or train_data[i][-2] == "V" \
-                   or train_data[i][-2] == "J" \
-                   or train_data[i][-2] == "R"
+            assert train_data[i][-2] == "N"
             orig_sentence = train_data[i][0].split(' ')
             start_id = int(train_data[i][1])
             end_id = int(train_data[i][2])
@@ -62,11 +51,10 @@ def generate_auxiliary(train_file_name, train_file_final_name, language):
 
 
 if __name__ == "__main__":
-    dataset = 'semeval-2015'
+    dataset = 'semeval-2013'
     language = 'IT'
-    file_name = "semeval-2015-task-13-it"
+    file_name = "multilingual-all-words.it"
 
-    # gold_key_file_name = f'./{dataset}/keys/gold_keys/{language.upper()}/{file_name}.key'
     train_file_name = f'./{dataset}/data/{file_name}.tsv'
     train_file_final_name = f'./{dataset}/data/{file_name}_sent_cls_ws.tsv'
 

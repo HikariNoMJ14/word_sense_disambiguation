@@ -65,7 +65,7 @@ def generate(file_name):
             gold_keys.append(key[1])
             key = m.readline().strip().split()
 
-    output_file = file_name[:-len('.data.xml')] + '.csv'
+    output_file = file_name[:-len('.data.xml')] + '.tsv'
     with open(output_file, "w", encoding="utf-8") as g:
         g.write('sentence\ttarget_index_start\ttarget_index_end\ttarget_id\ttarget_lemma\ttarget_pos\tsense_key\n')
         num = 0
