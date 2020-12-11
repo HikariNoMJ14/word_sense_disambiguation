@@ -29,12 +29,14 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
             sentence = ' '.join(sentence)
 
             lemma = train_data[i][4]
+
             # print(f'LEMMA: {lemma}')
+
             if mode == 'mono':
                 try:
                     correct_synset_id = wordnet_api.get_synset_id_from_sense_key(train_data[i][6])
                 except Exception as e:
-                    print(e)
+                    # print(e)
                     if mode == 'mono':
                         print(
                             f'WARNING: Couldn\'t find synset id for {train_data[i][6]}, getting sense by lemma instead')
@@ -45,8 +47,9 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                             print(f'Multiple synsets found')
                             for syn in tmp_synset_ids:
                                 print(syn)
-                                continue
-                        print('-----------------')
+                            print('-----------------')
+                        continue
+
             elif mode == 'multi':
                 correct_synset_id = train_data[i][6]  # TODO double-check
 
@@ -60,7 +63,9 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
 
             for j in range(len(synset_ids)):
                 synset_id = synset_ids[j]
+
                 # print(f'SYN ID: {synset_id}')
+
                 if not synset_id in glosses:
                     if mode == 'mono':
                         glosses[synset_id] = wordnet_api.get_glosses(synset_id)
@@ -90,11 +95,29 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
 
 
 if __name__ == "__main__":
-    mode = 'mono'
+    modes = ['mono']
     language = 'IT'
-    file_name = "training/semcor/semcor_n"
+    datasets = {
+        'training': ['semcor'],
+        'evaluation': ['senseval2', 'senseval3', 'semeval2007', 'semeval2013', 'semeval2015']
+    }
+    augment = [[], ['hyper'], ['hypo'], ['hyper', 'hypo']]
 
-    train_file_name = f'./data/{mode}/{file_name}.tsv'
-    train_file_final_name = f'./data/{mode}/{file_name}_sent_cls_ws.tsv'
+    for mode in modes:
+        for type, dataset in datasets.items():
+            for ds in dataset:
+                file_name = f'./data/{mode}/{type}/{ds}/{ds}_n'
 
-    generate_auxiliary(train_file_name, train_file_final_name, mode=mode, language=language, augment=['hyper'])
+                for augment_mode in augment:
+                    output_final_name = file_name
+                    for aug in augment_mode:
+                        output_final_name = output_final_name + f'_{aug}'
+                    output_final_name = output_final_name + '_final'
+
+                    generate_auxiliary(
+                        f'{file_name}.tsv',
+                        f'{output_final_name}.tsv',
+                        mode=mode,
+                        language=language,
+                        augment=augment
+                    )
