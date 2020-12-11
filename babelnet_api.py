@@ -9,7 +9,7 @@ def get_api_key():
 
 
 def get_api():
-    return BabelnetAPI(get_api())
+    return BabelnetAPI(get_api_key())
 
 
 def get_synset_ids(lemma, lang):
@@ -32,6 +32,7 @@ def get_glosses(synset_id, lang):
         glosses.append(gloss['gloss'])
 
     return glosses
+
 
 if __name__ == "__main__":
     get_glosses('bn:00066578n', 'IT')

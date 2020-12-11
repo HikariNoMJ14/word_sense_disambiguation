@@ -1,18 +1,21 @@
 import pandas as pd
-from babelnet_api import get_synset_ids, get_glosses
+import babelnet_api
+import wordnet_api
+from augmentation import add_hyper_hypo_glosses
+from utils import POS_MAPPING
 
-all_bn_synset_ids = {}
+all_synset_ids = {}
 glosses = {}
 
 
-def generate_auxiliary(train_file_name, train_file_final_name, language):
+def generate_auxiliary(train_file_name, train_file_final_name, mode, language, augment=[]):
     train_data = pd.read_csv(train_file_name, sep="\t", na_filter=False).values
 
     with open(train_file_final_name, "w", encoding="utf-8") as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
         num = 0
         for i in range(len(train_data)):
-            assert train_data[i][-2] == "N"
+            assert train_data[i][-2] == "N" or train_data[i][-2] == POS_MAPPING['N']
             orig_sentence = train_data[i][0].split(' ')
             start_id = int(train_data[i][1])
             end_id = int(train_data[i][2])
@@ -26,15 +29,49 @@ def generate_auxiliary(train_file_name, train_file_final_name, language):
             sentence = ' '.join(sentence)
 
             lemma = train_data[i][4]
-            correct_synset_id = train_data[i][6]
-            if not lemma in all_bn_synset_ids:
-                all_bn_synset_ids[lemma] = get_synset_ids(lemma, language)
-            synset_ids = all_bn_synset_ids[lemma]
+            # print(f'LEMMA: {lemma}')
+            if mode == 'mono':
+                try:
+                    correct_synset_id = wordnet_api.get_synset_id_from_sense_key(train_data[i][6])
+                except Exception as e:
+                    print(e)
+                    if mode == 'mono':
+                        print(
+                            f'WARNING: Couldn\'t find synset id for {train_data[i][6]}, getting sense by lemma instead')
+                        tmp_synset_ids = wordnet_api.get_synset_ids(lemma, 'n')
+                        if len(tmp_synset_ids) == 1:
+                            correct_synset_id = tmp_synset_ids[0]
+                        else:
+                            print(f'Multiple synsets found')
+                            for syn in tmp_synset_ids:
+                                print(syn)
+                                continue
+                        print('-----------------')
+            elif mode == 'multi':
+                correct_synset_id = train_data[i][6]  # TODO double-check
+
+            if not lemma in all_synset_ids:
+                if mode == 'mono':
+                    all_synset_ids[lemma] = wordnet_api.get_synset_ids(lemma, 'n')
+                elif mode == 'multi':
+                    all_synset_ids[lemma] = babelnet_api.get_synset_ids(lemma, language)
+
+            synset_ids = all_synset_ids[lemma]
 
             for j in range(len(synset_ids)):
                 synset_id = synset_ids[j]
+                # print(f'SYN ID: {synset_id}')
                 if not synset_id in glosses:
-                    glosses[synset_id] = get_glosses(synset_id, language)
+                    if mode == 'mono':
+                        glosses[synset_id] = wordnet_api.get_glosses(synset_id)
+                    elif mode == 'multi':
+                        glosses[synset_id] = babelnet_api.get_glosses(synset_id, language)
+
+                    if 'hyper' in augment:
+                        glosses[synset_id].extend(add_hyper_hypo_glosses(synset_id, 'hyper'))
+
+                    if 'hypo' in augment:
+                        glosses[synset_id].extend(add_hyper_hypo_glosses(synset_id, 'hypo'))
 
                 if len(glosses) == 0:
                     print(f'WARNING: Glosses missing for synset {synset_id} , {language}')
@@ -49,13 +86,15 @@ def generate_auxiliary(train_file_name, train_file_final_name, language):
                             synset_id + '\n')
                     num += 1
 
+            correct_synset_id = None
+
 
 if __name__ == "__main__":
-    dataset = 'semeval-2013'
+    mode = 'mono'
     language = 'IT'
-    file_name = "multilingual-all-words.it"
+    file_name = "training/semcor/semcor_n"
 
-    train_file_name = f'./{dataset}/data/{file_name}.tsv'
-    train_file_final_name = f'./{dataset}/data/{file_name}_sent_cls_ws.tsv'
+    train_file_name = f'./data/{mode}/{file_name}.tsv'
+    train_file_final_name = f'./data/{mode}/{file_name}_sent_cls_ws.tsv'
 
-    generate_auxiliary(train_file_name, train_file_final_name, language)
+    generate_auxiliary(train_file_name, train_file_final_name, mode=mode, language=language, augment=['hyper'])
