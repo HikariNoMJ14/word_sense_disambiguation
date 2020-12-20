@@ -1,15 +1,19 @@
 import pandas as pd
 import babelnet_api
 import wordnet_api
-from augmentation import add_hyper_hypo_glosses
+from augmentation import add_hyper_hypo_glosses, back_translate
 from utils import POS_MAPPING
-
-all_synset_ids = {}
-glosses = {}
 
 
 def generate_auxiliary(train_file_name, train_file_final_name, mode, language, augment=[]):
     train_data = pd.read_csv(train_file_name, sep="\t", na_filter=False).values
+
+    all_synset_ids = {}
+    glosses = {}
+
+    n_hyper = 3
+    n_hypo = 3
+    back_translate_lang = 'de'
 
     with open(train_file_final_name, "w", encoding="utf-8") as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
@@ -38,8 +42,8 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                 except Exception as e:
                     # print(e)
                     if mode == 'mono':
-                        print(
-                            f'WARNING: Couldn\'t find synset id for {train_data[i][6]}, getting sense by lemma instead')
+                        print(f'WARNING: Couldn\'t find synset id for {train_data[i][6]}, '
+                              f'getting sense by lemma instead')
                         tmp_synset_ids = wordnet_api.get_synset_ids(lemma, 'n')
                         if len(tmp_synset_ids) == 1:
                             correct_synset_id = tmp_synset_ids[0]
@@ -73,10 +77,21 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id] = babelnet_api.get_glosses(synset_id, language)
 
                     if 'hyper' in augment:
-                        glosses[synset_id].extend(add_hyper_hypo_glosses(synset_id, 'hyper'))
+                        hyper_glosses = add_hyper_hypo_glosses(synset_id, 'hyper', n_hyper)
+
+                        # print(f'Hyper: {len(hyper_glosses)}')
+
+                        glosses[synset_id].extend(hyper_glosses)
 
                     if 'hypo' in augment:
-                        glosses[synset_id].extend(add_hyper_hypo_glosses(synset_id, 'hypo'))
+                        hypo_glosses = add_hyper_hypo_glosses(synset_id, 'hypo', n_hypo)
+
+                        # print(f'Hypo: {len(hypo_glosses)}')
+
+                        glosses[synset_id].extend(hypo_glosses)
+
+                    if 'back_translation' in augment:
+                        glosses[synset_id].extend(back_translate(glosses[synset_id], back_translate_lang))
 
                 if len(glosses) == 0:
                     print(f'WARNING: Glosses missing for synset {synset_id} , {language}')
@@ -93,15 +108,24 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
 
             correct_synset_id = None
 
+        return num
+
 
 if __name__ == "__main__":
     modes = ['mono']
     language = 'IT'
     datasets = {
-        'training': ['semcor'],
-        'evaluation': ['senseval2', 'senseval3', 'semeval2007', 'semeval2013', 'semeval2015']
+        # 'training': ['semcor'],
+        # 'evaluation': ['senseval2', 'senseval3', 'semeval2007', 'semeval2013', 'semeval2015']
+        'evaluation': ['ALL']
     }
-    augment = [[], ['hyper'], ['hypo'], ['hyper', 'hypo']]
+    augment = [
+        [],
+        # ['hyper'],
+        # ['hypo'],
+        # ['hyper', 'hypo']
+        # ['back_translation']
+    ]
 
     for mode in modes:
         for type, dataset in datasets.items():
@@ -114,10 +138,13 @@ if __name__ == "__main__":
                         output_final_name = output_final_name + f'_{aug}'
                     output_final_name = output_final_name + '_final'
 
-                    generate_auxiliary(
+                    n_rows = generate_auxiliary(
                         f'{file_name}.tsv',
                         f'{output_final_name}.tsv',
                         mode=mode,
                         language=language,
-                        augment=augment
+                        augment=augment_mode
                     )
+
+                    print(f'{output_final_name}')
+                    print(f'written {n_rows} rows')

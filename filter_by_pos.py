@@ -17,4 +17,4 @@ def filter_by_pos(file_path, pos):
 
 
 if __name__ == "__main__":
-    filter_by_pos('./data/mono/evaluation/semeval2015/semeval2015.tsv', 'N')
+    filter_by_pos('data/mono/evaluation/ALL/ALL.tsv', 'N')
