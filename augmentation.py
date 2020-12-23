@@ -22,20 +22,31 @@ def back_translate(data, language):
     aug = naw.BackTranslationAug(
         from_model_name=f'transformer.wmt19.{language}-en',
         to_model_name=f'transformer.wmt19.{language}-en',
-        device='gpu'
+        device='cuda'
     )
 
     results = []
 
-    for d in data:
-        translated = aug.augment(d)
-        if translated.lower() != d.lower():
-            results.append(translated)
-            print(f'Original: {d}, Translated: {translated}')
+    translated = aug.augment(data)
+
+    for i, t in enumerate(translated):
+        if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
+            results.append(t)
+            print(f'Original:    {data[i]}')
+            print(f'Translated:  {t}')
+            print('-----------------------')
 
     return results
 
 
 if __name__ == "__main__":
+    import pandas as pd
+
     filename = './data/mono/training/semcor/semcor_n.tsv'
+
+    df = pd.read_csv(filename, delimiter='\t')
+
+    back_translate(list(df['sentence'].sample(100)), 'de')
+
+
 

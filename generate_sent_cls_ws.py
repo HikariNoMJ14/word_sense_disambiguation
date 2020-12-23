@@ -115,16 +115,16 @@ if __name__ == "__main__":
     modes = ['mono']
     language = 'IT'
     datasets = {
-        # 'training': ['semcor'],
+        'training': ['semcor'],
         # 'evaluation': ['senseval2', 'senseval3', 'semeval2007', 'semeval2013', 'semeval2015']
-        'evaluation': ['ALL']
+        # 'evaluation': ['ALL']
     }
     augment = [
-        [],
+        # [],
         # ['hyper'],
         # ['hypo'],
         # ['hyper', 'hypo']
-        # ['back_translation']
+        ['hyper', 'hypo', 'back_translation']
     ]
 
     for mode in modes:
