@@ -17,26 +17,28 @@ def add_hyper_hypo_glosses(synset_id, nym, n_hyper=3, n_hypo=3):
 
     return glosses
 
-def back_translate(data, language):
-    # aug = naw.BackTranslationAug(
-    #     from_model_name=f'transformer.wmt19.{language}-en',
-    #     to_model_name=f'transformer.wmt19.{language}-en',
-    #     device='cuda'
-    # )
-    #
-    # results = []
-    #
-    # translated = aug.augment(data)
-    #
-    # for i, t in enumerate(translated):
-    #     if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
-    #         results.append(t)
-    #         # print(f'Original:    {data[i]}')
-    #         # print(f'Translated:  {t}')
-    #         # print('-----------------------')
-    #
-    # return results
-    return ['back back']
+
+def create_aug(language):
+    return naw.BackTranslationAug(
+        from_model_name=f'transformer.wmt19.{language}-en',
+        to_model_name=f'transformer.wmt19.{language}-en',
+        device='cuda'
+    )
+
+
+def back_translate(aug, data):
+    results = []
+
+    translated = aug.augment(data)
+
+    for i, t in enumerate(translated):
+        if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
+            results.append(t)
+            # print(f'Original:    {data[i]}')
+            # print(f'Translated:  {t}')
+            # print('-----------------------')
+
+    return results
 
 
 if __name__ == "__main__":
@@ -46,7 +48,9 @@ if __name__ == "__main__":
 
     df = pd.read_csv(filename, delimiter='\t')
 
-    back_translate(list(df['sentence'].sample(100)), 'de')
+    aug = create_aug('de')
+
+    back_translate(aug, list(df['sentence'].sample(100)))
 
 
 

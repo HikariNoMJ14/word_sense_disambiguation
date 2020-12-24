@@ -2,7 +2,7 @@ import pandas as pd
 import babelnet_api
 import wordnet_api
 import numpy as np
-from augmentation import add_hyper_hypo_glosses, back_translate
+from augmentation import add_hyper_hypo_glosses, back_translate, create_aug
 from utils import POS_MAPPING
 
 
@@ -15,6 +15,9 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
     n_hyper = 3
     n_hypo = 3
     back_translate_lang = 'de'
+
+    if 'bbase' in augment or 'bhyper' in augment or 'bhypo' in augment:
+        aug = create_aug(back_translate_lang)
 
     with open(train_file_final_name, "w", encoding="utf-8") as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
@@ -76,14 +79,14 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                 # print(f'SYN ID: {synset_id}')
 
                 if not synset_id in glosses:
-                    print(f'First time seeing synset {synset_id}, current line {num}')
+                    # print(f'First time seeing synset {synset_id}, current line {num}')
                     if mode == 'mono':
                         glosses[synset_id] = wordnet_api.get_glosses(synset_id)
                     elif mode == 'multi':
                         glosses[synset_id] = babelnet_api.get_glosses(synset_id, language)
 
                     if 'bbase' in augment:
-                        glosses[synset_id].extend(back_translate(glosses[synset_id], back_translate_lang))
+                        glosses[synset_id].extend(back_translate(aug, glosses[synset_id]))
 
                     if 'hyper' in augment:
                         hyper_glosses = add_hyper_hypo_glosses(synset_id, 'hyper', n_hyper=n_hyper)
@@ -94,7 +97,7 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id].extend(hyper_glosses)
 
                         if 'bhyper' in augment:
-                            glosses[synset_id].extend(back_translate(hyper_glosses, back_translate_lang))
+                            glosses[synset_id].extend(back_translate(aug, hyper_glosses))
 
                     if 'hypo' in augment:
                         hypo_glosses = add_hyper_hypo_glosses(synset_id, 'hypo', n_hypo=n_hypo)
@@ -105,11 +108,11 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id].extend(hypo_glosses)
 
                         if 'bhypo' in augment:
-                            glosses[synset_id].extend(back_translate(hypo_glosses, back_translate_lang))
+                            glosses[synset_id].extend(back_translate(aug, hypo_glosses))
 
                 else:
                     already_seen += 1
-                    print(f'Synset already seen {synset_id}, current line {num}')
+                    # print(f'Synset already seen {synset_id}, current line {num}')
 
                 if len(glosses) == 0:
                     print(f'WARNING: Glosses missing for synset {synset_id} , {language}')
@@ -146,7 +149,7 @@ if __name__ == "__main__":
         # ['hyper'],
         # ['hypo'],
         # ['hyper', 'hypo']
-        ['hyper', 'hypo', 'bhypo', 'bhyper', 'bbase']
+        ['hyper', 'hypo', 'bbase', 'bhyper']
         # ['hyper', 'hypo', 'back_translation']
     ]
 
