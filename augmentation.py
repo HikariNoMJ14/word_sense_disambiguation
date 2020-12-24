@@ -17,27 +17,26 @@ def add_hyper_hypo_glosses(synset_id, nym, n_hyper=3, n_hypo=3):
 
     return glosses
 
-
-
 def back_translate(data, language):
-    aug = naw.BackTranslationAug(
-        from_model_name=f'transformer.wmt19.{language}-en',
-        to_model_name=f'transformer.wmt19.{language}-en',
-        device='cuda'
-    )
-
-    results = []
-
-    translated = aug.augment(data)
-
-    for i, t in enumerate(translated):
-        if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
-            results.append(t)
-            # print(f'Original:    {data[i]}')
-            # print(f'Translated:  {t}')
-            # print('-----------------------')
-
-    return results
+    # aug = naw.BackTranslationAug(
+    #     from_model_name=f'transformer.wmt19.{language}-en',
+    #     to_model_name=f'transformer.wmt19.{language}-en',
+    #     device='cuda'
+    # )
+    #
+    # results = []
+    #
+    # translated = aug.augment(data)
+    #
+    # for i, t in enumerate(translated):
+    #     if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
+    #         results.append(t)
+    #         # print(f'Original:    {data[i]}')
+    #         # print(f'Translated:  {t}')
+    #         # print('-----------------------')
+    #
+    # return results
+    return ['back back']
 
 
 if __name__ == "__main__":

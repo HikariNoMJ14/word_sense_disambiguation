@@ -63,7 +63,6 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                 correct_synset_id = train_data[i][6]  # TODO double-check
 
             if not lemma in all_synset_ids:
-                print(f'First time seeing synset {synset_id}, current line {num}')
                 if mode == 'mono':
                     all_synset_ids[lemma] = wordnet_api.get_synset_ids(lemma, 'n')
                 elif mode == 'multi':
@@ -77,10 +76,14 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                 # print(f'SYN ID: {synset_id}')
 
                 if not synset_id in glosses:
+                    print(f'First time seeing synset {synset_id}, current line {num}')
                     if mode == 'mono':
                         glosses[synset_id] = wordnet_api.get_glosses(synset_id)
                     elif mode == 'multi':
                         glosses[synset_id] = babelnet_api.get_glosses(synset_id, language)
+
+                    if 'bbase' in augment:
+                        glosses[synset_id].extend(back_translate(glosses[synset_id], back_translate_lang))
 
                     if 'hyper' in augment:
                         hyper_glosses = add_hyper_hypo_glosses(synset_id, 'hyper', n_hyper=n_hyper)
@@ -142,8 +145,8 @@ if __name__ == "__main__":
         # [],
         # ['hyper'],
         # ['hypo'],
-        ['hyper', 'hypo']
-        # ['hyper', 'hypo', 'bhypo', 'bhyper']
+        # ['hyper', 'hypo']
+        ['hyper', 'hypo', 'bhypo', 'bhyper', 'bbase']
         # ['hyper', 'hypo', 'back_translation']
     ]
 
