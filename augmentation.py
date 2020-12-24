@@ -18,6 +18,7 @@ def add_hyper_hypo_glosses(synset_id, nym, n_hyper=3, n_hypo=3):
     return glosses
 
 
+
 def back_translate(data, language):
     aug = naw.BackTranslationAug(
         from_model_name=f'transformer.wmt19.{language}-en',
@@ -32,9 +33,9 @@ def back_translate(data, language):
     for i, t in enumerate(translated):
         if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
             results.append(t)
-            print(f'Original:    {data[i]}')
-            print(f'Translated:  {t}')
-            print('-----------------------')
+            # print(f'Original:    {data[i]}')
+            # print(f'Translated:  {t}')
+            # print('-----------------------')
 
     return results
 
@@ -42,7 +43,7 @@ def back_translate(data, language):
 if __name__ == "__main__":
     import pandas as pd
 
-    filename = './data/mono/training/semcor/semcor_n.tsv'
+    filename = 'Training_Corpora/SemCor/semcor_n.tsv'
 
     df = pd.read_csv(filename, delimiter='\t')
 

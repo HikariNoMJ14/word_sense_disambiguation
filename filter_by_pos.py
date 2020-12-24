@@ -3,6 +3,7 @@ import pandas as pd
 
 from utils import POS_MAPPING
 
+
 def filter_by_pos(file_path, pos):
 
     df = pd.read_csv(file_path, delimiter='\t')
@@ -17,4 +18,4 @@ def filter_by_pos(file_path, pos):
 
 
 if __name__ == "__main__":
-    filter_by_pos('data/mono/evaluation/ALL/ALL.tsv', 'N')
+    filter_by_pos('data/mono/training/semcor/semcor.tsv', 'N')

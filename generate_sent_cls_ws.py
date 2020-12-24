@@ -1,6 +1,7 @@
 import pandas as pd
 import babelnet_api
 import wordnet_api
+import numpy as np
 from augmentation import add_hyper_hypo_glosses, back_translate
 from utils import POS_MAPPING
 
@@ -18,6 +19,10 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
     with open(train_file_final_name, "w", encoding="utf-8") as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
         num = 0
+        tot_hyper = 0
+        tot_hypo = 0
+        already_seen = 0
+
         for i in range(len(train_data)):
             assert train_data[i][-2] == "N" or train_data[i][-2] == POS_MAPPING['N']
             orig_sentence = train_data[i][0].split(' ')
@@ -58,6 +63,7 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                 correct_synset_id = train_data[i][6]  # TODO double-check
 
             if not lemma in all_synset_ids:
+                print(f'First time seeing synset {synset_id}, current line {num}')
                 if mode == 'mono':
                     all_synset_ids[lemma] = wordnet_api.get_synset_ids(lemma, 'n')
                 elif mode == 'multi':
@@ -77,21 +83,30 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id] = babelnet_api.get_glosses(synset_id, language)
 
                     if 'hyper' in augment:
-                        hyper_glosses = add_hyper_hypo_glosses(synset_id, 'hyper', n_hyper)
+                        hyper_glosses = add_hyper_hypo_glosses(synset_id, 'hyper', n_hyper=n_hyper)
 
+                        tot_hyper += len(hyper_glosses)
                         # print(f'Hyper: {len(hyper_glosses)}')
 
                         glosses[synset_id].extend(hyper_glosses)
 
-                    if 'hypo' in augment:
-                        hypo_glosses = add_hyper_hypo_glosses(synset_id, 'hypo', n_hypo)
+                        if 'bhyper' in augment:
+                            glosses[synset_id].extend(back_translate(hyper_glosses, back_translate_lang))
 
+                    if 'hypo' in augment:
+                        hypo_glosses = add_hyper_hypo_glosses(synset_id, 'hypo', n_hypo=n_hypo)
+
+                        tot_hypo += len(hypo_glosses)
                         # print(f'Hypo: {len(hypo_glosses)}')
 
                         glosses[synset_id].extend(hypo_glosses)
 
-                    if 'back_translation' in augment:
-                        glosses[synset_id].extend(back_translate(glosses[synset_id], back_translate_lang))
+                        if 'bhypo' in augment:
+                            glosses[synset_id].extend(back_translate(hypo_glosses, back_translate_lang))
+
+                else:
+                    already_seen += 1
+                    print(f'Synset already seen {synset_id}, current line {num}')
 
                 if len(glosses) == 0:
                     print(f'WARNING: Glosses missing for synset {synset_id} , {language}')
@@ -108,6 +123,10 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
 
             correct_synset_id = None
 
+        print(f"Total number of lemmas: {len(all_synset_ids)}")
+        print(f"Total number of synsets: {len(glosses)}")
+        print(f"Number of times synsets seen again {already_seen}")
+
         return num
 
 
@@ -123,8 +142,9 @@ if __name__ == "__main__":
         # [],
         # ['hyper'],
         # ['hypo'],
-        # ['hyper', 'hypo']
-        ['hyper', 'hypo', 'back_translation']
+        ['hyper', 'hypo']
+        # ['hyper', 'hypo', 'bhypo', 'bhyper']
+        # ['hyper', 'hypo', 'back_translation']
     ]
 
     for mode in modes:
@@ -147,4 +167,4 @@ if __name__ == "__main__":
                     )
 
                     print(f'{output_final_name}')
-                    print(f'written {n_rows} rows')
+                    print(f'Written {n_rows} rows')
