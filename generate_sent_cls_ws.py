@@ -2,7 +2,7 @@ import pandas as pd
 import babelnet_api
 import wordnet_api
 import numpy as np
-from augmentation import add_hyper_hypo_glosses, back_translate, create_aug
+from augmentation import add_hyper_hypo_glosses, back_translate, create_back_aug, create_context_aug, add_context_words
 from utils import POS_MAPPING
 
 
@@ -15,9 +15,19 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
     n_hyper = 3
     n_hypo = 3
     back_translate_lang = 'de'
+    context_params = {
+        'n': 1,
+        'aug_p': 0.15,
+        'top_p': 3,
+        'top_k': 3,
+        'temperature': 0.9
+    }
 
     if 'bbase' in augment or 'bhyper' in augment or 'bhypo' in augment:
-        aug = create_aug(back_translate_lang)
+        baug = create_back_aug(back_translate_lang)
+
+    if 'cbase' in augment or 'chyper' in augment or 'chypo' in augment:
+        caug = create_context_aug(context_params)
 
     with open(train_file_final_name, "w", encoding="utf-8") as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
@@ -86,7 +96,13 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id] = babelnet_api.get_glosses(synset_id, language)
 
                     if 'bbase' in augment:
-                        glosses[synset_id].extend(back_translate(aug, glosses[synset_id]))
+                        bbase = back_translate(baug, glosses[synset_id])
+                        glosses[synset_id].extend(bbase)
+
+                    if 'cbase' in augment:
+                        cbase = add_context_words(caug, glosses[synset_id])
+                        # print(glosses[synset_id] + cbase)
+                        glosses[synset_id].extend(cbase)
 
                     if 'hyper' in augment:
                         hyper_glosses = add_hyper_hypo_glosses(synset_id, 'hyper', n_hyper=n_hyper)
@@ -97,7 +113,9 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id].extend(hyper_glosses)
 
                         if 'bhyper' in augment:
-                            glosses[synset_id].extend(back_translate(aug, hyper_glosses))
+                            bhyper = back_translate(baug, hyper_glosses)
+                            # print(bhyper)
+                            glosses[synset_id].extend(bhyper)
 
                     if 'hypo' in augment:
                         hypo_glosses = add_hyper_hypo_glosses(synset_id, 'hypo', n_hypo=n_hypo)
@@ -108,7 +126,9 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
                         glosses[synset_id].extend(hypo_glosses)
 
                         if 'bhypo' in augment:
-                            glosses[synset_id].extend(back_translate(aug, hypo_glosses))
+                            bhypo = back_translate(baug, hypo_glosses)
+                            # print(bhypo)
+                            glosses[synset_id].extend(bhypo)
 
                 else:
                     already_seen += 1
@@ -149,8 +169,8 @@ if __name__ == "__main__":
         # ['hyper'],
         # ['hypo'],
         # ['hyper', 'hypo']
-        ['hyper', 'hypo', 'bbase', 'bhyper']
-        # ['hyper', 'hypo', 'back_translation']
+        # ['hyper', 'hypo', 'bbase', 'bhyper']
+        ['cbase']
     ]
 
     for mode in modes:
