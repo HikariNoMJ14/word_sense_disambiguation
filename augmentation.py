@@ -1,9 +1,12 @@
 import nltk
+import os
 import numpy as np
+import pandas as pd
 from wordnet_api import get_hyponyms, get_hypernyms
 import nlpaug.augmenter.word as naw
 
 nltk_stopwords = nltk.corpus.stopwords.words('english').append(r'".*"')
+
 
 def add_hyper_hypo_glosses(synset_id, nym, n_hyper=3, n_hypo=3):
     glosses = []
@@ -65,96 +68,104 @@ def add_context_words(aug, data, n=1):
     return results
 
 
-if __name__ == "__main__":
-    import pandas as pd
-    # import re
+def merge_dfs(file_1, file_2, file_out):
+    # import csv
     #
-    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
+    # df_1 = pd.read_csv(file_1, delimiter='\t')
+    # df_2 = pd.read_csv(file_2, delimiter='\t')
     #
-    # df = pd.read_csv(filename, delimiter='\t')
-    #
-    # context_params = {
-    #     'n': 1,
-    #     'aug_p': 0.15,
-    #     'top_p': 3,
-    #     'top_k': 3,
-    #     'temperature': 0.9
-    # }
-    #
+    # df = pd.concat([df_1, df_2], axis=0)
+    # df.to_csv(
+    #     file_out,
+    #     index=False,
+    #     sep='\t',
+    #     quoting=csv.QUOTE_NONE,
+    #     quotechar='')
+    first_line = True
+    with open(file_out, 'w') as fo:
+        for line in open(file_1, 'r'):
+            fo.write(line)
+        for line in open(file_2, 'r'):
+            if first_line:
+                first_line = False
+            else:
+                fo.write(line)
+
+
+
+def augment_context(filename, output_filename):
+    df = pd.read_csv(filename, delimiter='\t')
+
+    context_params = {
+        'n': 1,
+        'aug_p': 0.15,
+        'top_p': 3,
+        'top_k': 3,
+        'temperature': 0.9
+    }
+
     n_sent = 1
-    # chunksize = 250
-    # ctx_sentences = []
-    #
-    # import os
-    #
-    # output_filename = f'./data/mono/training/semcor/semcor_n_context_{n_sent}.tsv'
-    #
-    # if os.path.exists(output_filename):
-    #     os.remove(output_filename)
-    #
-    # with open(output_filename, 'w') as f:
-    #     f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
-    #     for k, g in df.groupby(np.arange(len(df))//chunksize):
-    #         aug = create_context_aug(context_params)
-    #         print(f'group {k}, {len(g)}')
-    #
-    #         g['sentence_aug'] = aug.augment(list(g.sentence.values), n=n_sent)
-    #         g['sentence_aug'] = g['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
-    #
-    #         match_g = r'" (.*) "'
-    #
-    #         g['target'] = g['sentence'].str.extract(match_g)
-    #         g['target_aug'] = g['sentence_aug'].str.extract(match_g)
-    #
-    #         # if g[g['target'].str.lower() != g['target_aug'].str.lower()].shape[0] > 0:
-    #         # print(g[(g['target'].str.lower() != g['target_aug'].str.lower())])
-    #
-    #         for i, row in g.iterrows():
-    #             f.write(row['target_id'] + '\t' +
-    #                     str(row['label']) + '\t' +
-    #                     row['sentence'] + '\t' +
-    #                     row['gloss'] + '\t' +
-    #                     row['synset_id'] + '\n')
+    chunksize = 250
 
-    # for i, row in df.iterrows():
-    #     try:
-    #         target_word = re.search(r'".*"', row.sentence)[0]
-    #         ctx_sentences = aug.augment(row.sentence, n=5)
-    #
-    #         ctx_sentence = None
-    #         for c in ctx_sentences:
-    #             if target_word in c:
-    #                 ctx_sentence = c
-    #
-    #         if ctx_sentence:
-    #             ctx_row = row.copy()
-    #             ctx_row.sentence = ctx_sentence
-    #             df.append(ctx_row)
-    #         else:
-    #             print('not found!')
-    #     except:
-    #         pass
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
 
-    filename = './data/mono/training/semcor/semcor_n_final.tsv'
-    context_filename = f'./data/mono/training/semcor/semcor_n_context_{n_sent}.tsv'
+    with open(output_filename, 'w') as f:
+        f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
+        for k, g in df.groupby(np.arange(len(df))//chunksize):
+            aug = create_context_aug(context_params)
+            print(f'group {k}, {len(g)}')
+
+            g['sentence_aug'] = aug.augment(list(g.sentence.values), n=n_sent)
+            g['sentence_aug'] = g['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
+
+            for i, row in g.iterrows():
+                f.write(row['target_id'] + '\t' +
+                        str(row['label']) + '\t' +
+                        row['sentence_aug'] + '\t' +
+                        row['gloss'] + '\t' +
+                        row['synset_id'] + '\n')
+
+
+def back_translate_gloss(filename, output_filename):
+    aug = create_back_aug('de')
 
     df = pd.read_csv(filename, delimiter='\t')
-    ctx_df = pd.read_csv(context_filename, delimiter='\t')
+    chunksize = 20000
 
-    print(df.shape)
-    print(ctx_df.shape)
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
 
-    df = pd.concat([df, ctx_df], axis=0)
-    df.to_csv('./data/mono/training/semcor/semcor_n_final_context1.tsv', index=False)
+    with open(output_filename, 'w') as f:
+        f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
+        for k, g in df.groupby(np.arange(len(df))//chunksize):
+            print(f'group {k}, {len(g)}')
 
-    # match_g = r'" (.*) "'
-    # match_g_2 = r'(.*) :'
+            g['sentence_aug'] = aug.augment(list(g.sentence.values))
+
+            for i, row in g.iterrows():
+                f.write(row['target_id'] + '\t' +
+                        str(row['label']) + '\t' +
+                        row['sentence_aug'] + '\t' +
+                        row['gloss'] + '\t' +
+                        row['synset_id'] + '\n')
+
+
+if __name__ == "__main__":
+    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
     #
-    # df['target'] = df['sentence'].str.extract(match_g)
-    # ctx_df['target'] = ctx_df['sentence'].str.extract(match_g)
+    # augment_context(filename, output_filename)
+
+    # filename = './data/mono/training/semcor/semcor_n_final_context1.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv'
     #
-    # # df['target_2'] = df['gloss'].str.extract(match_g_2)
-    # # ctx_df['target_2'] = ctx_df['gloss'].str.extract(match_g_2)
-    #
-    # print(df[df['target'] != df['target_2']].count())
-    # print(ctx_df[ctx_df['target'] != ctx_df['target_2']].count())
+    # back_translate_gloss(filename, output_filename)
+
+    file_1 = './data/mono/training/semcor/semcor_n_final_context1.tsv'
+    file_2 = f'./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv'
+    file_out = f'./data/mono/training/semcor/semcor_n_final_context1_back_all.tsv'
+
+    merge_dfs(file_1, file_2, file_out)
+
+
