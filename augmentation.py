@@ -141,13 +141,17 @@ def back_translate_gloss(filename, output_filename):
         for k, g in df.groupby(np.arange(len(df))//chunksize):
             print(f'group {k}, {len(g)}')
 
-            g['sentence_aug'] = aug.augment(list(g.sentence.values))
+            rgx = r'(.*) : '
+
+            g['target_word'] = g.gloss.str.extract(rgx)
+
+            g['gloss_aug'] = aug.augment(list(g.gloss.str.replace(rgx, '').values))
 
             for i, row in g.iterrows():
                 f.write(row['target_id'] + '\t' +
                         str(row['label']) + '\t' +
-                        row['sentence_aug'] + '\t' +
-                        row['gloss'] + '\t' +
+                        row['sentence'] + '\t' +
+                        row['target_word'] + " : " + row['gloss_aug'] + '\t' +
                         row['synset_id'] + '\n')
 
 
@@ -157,15 +161,46 @@ if __name__ == "__main__":
     #
     # augment_context(filename, output_filename)
 
-    # filename = './data/mono/training/semcor/semcor_n_final_context1.tsv'
-    # output_filename = f'./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv'
+    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
     #
     # back_translate_gloss(filename, output_filename)
 
-    file_1 = './data/mono/training/semcor/semcor_n_final_context1.tsv'
-    file_2 = f'./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv'
-    file_out = f'./data/mono/training/semcor/semcor_n_final_context1_back_all.tsv'
+    # file_1 = './data/mono/training/semcor/semcor_n_final_context1.tsv'
+    # file_2 = f'./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv'
+    # file_out = f'./data/mono/training/semcor/semcor_n_final_context1_back_all.tsv'
+    #
+    # merge_dfs(file_1, file_2, file_out)
 
-    merge_dfs(file_1, file_2, file_out)
+    # bbase = pd.read_csv('./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv',
+    #                     delimiter='\t')
+    # bbase = bbase.iloc[:401936, :]
+    #
+    # base_cbase = pd.read_csv('./data/mono/training/semcor/semcor_n_final_context1.tsv',
+    #                  delimiter='\t')
+    #
+    # df = pd.concat([bbase, base_cbase], axis=0)
+    #
+    # print(df.shape)
 
+    file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
+    file_2 = './data/mono/training/semcor/semcor_n_final_bbase.tsv'
+    file_3 = './data/mono/training/semcor/semcor_n_final_only_context1.tsv'
+    file_out = './data/mono/training/semcor/semcor_n_final_base_bbase_cbase.tsv'
 
+    first_line = True
+    i = 0
+    with open(file_out, 'w') as fo:
+        for line in open(file_1, 'r'):
+            fo.write(line)
+        for line in open(file_2, 'r'):
+            if first_line:
+                first_line = False
+            else:
+                fo.write(line)
+        first_line = True
+        for line in open(file_3, 'r'):
+            if first_line:
+                first_line = False
+            else:
+                fo.write(line)
