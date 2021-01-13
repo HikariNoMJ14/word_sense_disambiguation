@@ -26,14 +26,13 @@ def add_hyper_hypo_glosses(synset_id, nym, n_hyper=3, n_hypo=3):
 
 def create_back_aug(language):
     return naw.BackTranslationAug(
-        from_model_name=f'transformer.wmt19.{language}-en',
+        from_model_name=f'transformer.wmt19.en-{language}',
         to_model_name=f'transformer.wmt19.{language}-en',
         device='cuda'
     )
 
 
 def create_context_aug(params):
-
     return naw.ContextualWordEmbsAug(
         model_path='distilbert-base-uncased',
         aug_p=params['aug_p'],
@@ -69,18 +68,6 @@ def add_context_words(aug, data, n=1):
 
 
 def merge_dfs(file_1, file_2, file_out):
-    # import csv
-    #
-    # df_1 = pd.read_csv(file_1, delimiter='\t')
-    # df_2 = pd.read_csv(file_2, delimiter='\t')
-    #
-    # df = pd.concat([df_1, df_2], axis=0)
-    # df.to_csv(
-    #     file_out,
-    #     index=False,
-    #     sep='\t',
-    #     quoting=csv.QUOTE_NONE,
-    #     quotechar='')
     first_line = True
     with open(file_out, 'w') as fo:
         for line in open(file_1, 'r'):
@@ -90,7 +77,6 @@ def merge_dfs(file_1, file_2, file_out):
                 first_line = False
             else:
                 fo.write(line)
-
 
 
 def augment_context(filename, output_filename):
@@ -112,7 +98,7 @@ def augment_context(filename, output_filename):
 
     with open(output_filename, 'w') as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
-        for k, g in df.groupby(np.arange(len(df))//chunksize):
+        for k, g in df.groupby(np.arange(len(df)) // chunksize):
             aug = create_context_aug(context_params)
             print(f'group {k}, {len(g)}')
 
@@ -138,7 +124,7 @@ def back_translate_gloss(filename, output_filename):
 
     with open(output_filename, 'w') as f:
         f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
-        for k, g in df.groupby(np.arange(len(df))//chunksize):
+        for k, g in df.groupby(np.arange(len(df)) // chunksize):
             print(f'group {k}, {len(g)}')
 
             rgx = r'(.*) : '
@@ -153,6 +139,26 @@ def back_translate_gloss(filename, output_filename):
                         row['sentence'] + '\t' +
                         row['target_word'] + " : " + row['gloss_aug'] + '\t' +
                         row['synset_id'] + '\n')
+
+
+def add_hypernym_to_gloss(file_in, file_out):
+    df_in = pd.read_csv(file_in, delimiter='\t')
+
+    with open(file_out, 'w') as fo:
+        fo.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
+
+        for i, row in df_in.iterrows():
+            hyper_gloss = add_hyper_hypo_glosses(row['synset_id'], 'hyper', n_hyper=1)
+            hyper_gloss = hyper_gloss[0] if len(hyper_gloss) > 0 else ''
+
+            if i % 1000 == 0:
+                print(hyper_gloss)
+
+            fo.write(row['target_id'] + '\t' \
+                     + str(row['label']) + '\t' \
+                     + row['sentence'] + '\t' \
+                     + row['gloss'] + ' ^ ' + hyper_gloss + '\t' \
+                     + row['synset_id'] + '\n')
 
 
 if __name__ == "__main__":
@@ -183,24 +189,29 @@ if __name__ == "__main__":
     #
     # print(df.shape)
 
-    file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
-    file_2 = './data/mono/training/semcor/semcor_n_final_bbase.tsv'
-    file_3 = './data/mono/training/semcor/semcor_n_final_only_context1.tsv'
-    file_out = './data/mono/training/semcor/semcor_n_final_base_bbase_cbase.tsv'
+    # file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
+    # file_2 = './data/mono/training/semcor/semcor_n_final_bbase.tsv'
+    # file_3 = './data/mono/training/semcor/semcor_n_final_only_context1.tsv'
+    # file_out = './data/mono/training/semcor/semcor_n_final_base_bbase_cbase.tsv'
+    #
+    # first_line = True
+    # i = 0
+    # with open(file_out, 'w') as fo:
+    #     for line in open(file_1, 'r'):
+    #         fo.write(line)
+    #     for line in open(file_2, 'r'):
+    #         if first_line:
+    #             first_line = False
+    #         else:
+    #             fo.write(line)
+    #     first_line = True
+    #     for line in open(file_3, 'r'):
+    #         if first_line:
+    #             first_line = False
+    #         else:
+    #             fo.write(line)
 
-    first_line = True
-    i = 0
-    with open(file_out, 'w') as fo:
-        for line in open(file_1, 'r'):
-            fo.write(line)
-        for line in open(file_2, 'r'):
-            if first_line:
-                first_line = False
-            else:
-                fo.write(line)
-        first_line = True
-        for line in open(file_3, 'r'):
-            if first_line:
-                first_line = False
-            else:
-                fo.write(line)
+    file_in = './data/mono/evaluation/ALL/ALL_n_final.tsv'
+    file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate.tsv'
+
+    add_hypernym_to_gloss(file_in, file_out)

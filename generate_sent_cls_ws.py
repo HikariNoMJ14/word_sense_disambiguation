@@ -170,7 +170,8 @@ if __name__ == "__main__":
         # ['hypo'],
         # ['hyper', 'hypo']
         # ['hyper', 'hypo', 'bbase', 'bhyper']
-        ['cbase']
+        ['bbase']
+        # ['cbase']
     ]
 
     for mode in modes:
@@ -182,7 +183,7 @@ if __name__ == "__main__":
                     output_final_name = file_name
                     for aug in augment_mode:
                         output_final_name = output_final_name + f'_{aug}'
-                    output_final_name = output_final_name + '_final'
+                    output_final_name = output_final_name + '_de_final'
 
                     n_rows = generate_auxiliary(
                         f'{file_name}.tsv',
