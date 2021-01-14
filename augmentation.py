@@ -46,19 +46,24 @@ def create_context_aug(params):
     )
 
 
-def back_translate(aug, data):
-    results = []
-
+def back_translate(aug, data, ignore_identical=False):
     translated = aug.augment(data)
 
-    for i, t in enumerate(translated):
-        if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
-            results.append(t)
-            # print(f'Original:    {data[i]}')
-            # print(f'Translated:  {t}')
-            # print('-----------------------')
+    if ignore_identical:
+        results = []
 
-    return results
+        for i, t in enumerate(translated):
+            if t.lower().replace(' ', '') != data[i].lower().replace(' ', ''):
+                results.append(t)
+                # print(f'Original:    {data[i]}')
+                # print(f'Translated:  {t}')
+                # print('-----------------------')
+
+        return results
+    else:
+        return translated
+
+
 
 
 def add_context_words(aug, data, n=1):
@@ -162,6 +167,9 @@ def add_hypernym_to_gloss(file_in, file_out):
 
 
 if __name__ == "__main__":
+
+    # -----------------------------------------------------------
+
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
     # output_filename = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
     #
@@ -172,11 +180,15 @@ if __name__ == "__main__":
     #
     # back_translate_gloss(filename, output_filename)
 
-    # file_1 = './data/mono/training/semcor/semcor_n_final_context1.tsv'
-    # file_2 = f'./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv'
-    # file_out = f'./data/mono/training/semcor/semcor_n_final_context1_back_all.tsv'
-    #
-    # merge_dfs(file_1, file_2, file_out)
+    # -----------------------------------------------------------
+
+    file_1 = './data/mono/training/semcor/semcor_n_bbase_ru_final.tsv'
+    file_2 = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
+    file_out = f'./data/mono/training/semcor/semcor_n_final_base_bbase_cbase_ru.tsv'
+
+    merge_dfs(file_1, file_2, file_out)
+
+    # -----------------------------------------------------------
 
     # bbase = pd.read_csv('./data/mono/training/semcor/semcor_n_final_context1_only_back.tsv',
     #                     delimiter='\t')
@@ -188,6 +200,8 @@ if __name__ == "__main__":
     # df = pd.concat([bbase, base_cbase], axis=0)
     #
     # print(df.shape)
+
+    # -----------------------------------------------------------
 
     # file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
     # file_2 = './data/mono/training/semcor/semcor_n_final_bbase.tsv'
@@ -211,7 +225,9 @@ if __name__ == "__main__":
     #         else:
     #             fo.write(line)
 
-    file_in = './data/mono/evaluation/ALL/ALL_n_final.tsv'
-    file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate.tsv'
+    # -----------------------------------------------------------
 
-    add_hypernym_to_gloss(file_in, file_out)
+    # file_in = './data/mono/evaluation/ALL/ALL_n_final.tsv'
+    # file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate.tsv'
+    #
+    # add_hypernym_to_gloss(file_in, file_out)
