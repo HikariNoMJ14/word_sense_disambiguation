@@ -111,9 +111,14 @@ def augment_context(filename, output_filename):
             g['sentence_aug'] = g['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
 
             for i, row in g.iterrows():
+                if i % 2 == 1:
+                    sentence = row['sentence']
+                else:
+                    sentence = row['sentence_aug']
+
                 f.write(row['target_id'] + '\t' +
                         str(row['label']) + '\t' +
-                        row['sentence_aug'] + '\t' +
+                        sentence + '\t' +
                         row['gloss'] + '\t' +
                         row['synset_id'] + '\n')
 
@@ -170,10 +175,10 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
-    # output_filename = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
-    #
-    # augment_context(filename, output_filename)
+    filename = './data/mono/training/semcor/semcor_n_bbase_de_final.tsv'
+    output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de.tsv'
+
+    augment_context(filename, output_filename)
 
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
     # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
@@ -182,11 +187,11 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    file_1 = './data/mono/training/semcor/semcor_n_bbase_ru_final.tsv'
-    file_2 = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
-    file_out = f'./data/mono/training/semcor/semcor_n_final_base_bbase_cbase_ru.tsv'
-
-    merge_dfs(file_1, file_2, file_out)
+    # file_1 = './data/mono/training/semcor/semcor_n_bbase_ru_final.tsv'
+    # file_2 = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
+    # file_out = f'./data/mono/training/semcor/semcor_n_final_base_bbase_cbase_ru.tsv'
+    #
+    # merge_dfs(file_1, file_2, file_out)
 
     # -----------------------------------------------------------
 
