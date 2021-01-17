@@ -84,16 +84,8 @@ def merge_dfs(file_1, file_2, file_out):
                 fo.write(line)
 
 
-def augment_context(filename, output_filename):
+def augment_context(filename, output_filename, context_params):
     df = pd.read_csv(filename, delimiter='\t')
-
-    context_params = {
-        'n': 1,
-        'aug_p': 0.15,
-        'top_p': 3,
-        'top_k': 3,
-        'temperature': 0.9
-    }
 
     n_sent = 1
     chunksize = 250
@@ -175,10 +167,18 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
+    params = {
+        'n': 1,
+        'aug_p': 0.15,
+        'top_p': 3,
+        'top_k': 3,
+        'temperature': 0.9
+    }
+
     filename = './data/mono/training/semcor/semcor_n_bbase_de_final.tsv'
     output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de.tsv'
 
-    augment_context(filename, output_filename)
+    augment_context(filename, output_filename, params)
 
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
     # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
