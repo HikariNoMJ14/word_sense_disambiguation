@@ -36,9 +36,9 @@ def create_context_aug(params):
     return naw.ContextualWordEmbsAug(
         model_path='distilbert-base-uncased',
         aug_p=params['aug_p'],
+        aug_max=params['aug_max'],
         top_k=params['top_k'],
         top_p=params['top_p'],
-        aug_max=None,
         device='cuda',
         temperature=params['temperature'],
         stopwords=nltk_stopwords,
@@ -103,14 +103,9 @@ def augment_context(filename, output_filename, context_params):
             g['sentence_aug'] = g['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
 
             for i, row in g.iterrows():
-                if i % 2 == 1:
-                    sentence = row['sentence']
-                else:
-                    sentence = row['sentence_aug']
-
                 f.write(row['target_id'] + '\t' +
                         str(row['label']) + '\t' +
-                        sentence + '\t' +
+                        row['sentence_aug'] + '\t' +
                         row['gloss'] + '\t' +
                         row['synset_id'] + '\n')
 
@@ -170,13 +165,14 @@ if __name__ == "__main__":
     params = {
         'n': 1,
         'aug_p': 0.15,
-        'top_p': 3,
-        'top_k': 3,
-        'temperature': 0.9
+        'aug_max': 3,
+        'top_p': 2,
+        'top_k': 2,
+        'temperature': 1
     }
 
     filename = './data/mono/training/semcor/semcor_n_bbase_de_final.tsv'
-    output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de.tsv'
+    output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de_params_2.tsv'
 
     augment_context(filename, output_filename, params)
 
