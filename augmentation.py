@@ -162,7 +162,7 @@ def add_hypernym_to_gloss(file_in, file_out):
 def back_translate_context():
     df = pd.read_csv('./data/mono/training/semcor/semcor_n.tsv', delimiter='\t')
 
-    unique_sentence = df['sentence'].unique()[:10]
+    unique_sentence = df['sentence'].unique()
     all_sentences = {}
 
     aug = create_back_aug('de')
