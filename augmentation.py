@@ -102,10 +102,7 @@ def augment_context(filename, output_filename, context_params):
             g['sentence_aug'] = g['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
 
             for i, row in g.iterrows():
-                if i % 2 == 1:
-                    sentence = row['sentence']
-                else:
-                    sentence = row['sentence_aug']
+                sentence = row['sentence_aug']
 
                 f.write(row['target_id'] + '\t' +
                         str(row['label']) + '\t' +
@@ -225,18 +222,18 @@ def back_translate_context():
 if __name__ == "__main__":
     # -----------------------------------------------------------
 
-    # params = {
-    #     'n': 1,
-    #     'aug_p': 0.15,
-    #     'top_p': 4,
-    #     'top_k': 4,
-    #     'temperature': 1
-    # }
-    #
-    # filename = './data/mono/training/semcor/semcor_n_bbase_de_final.tsv'
-    # output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de_params_4.tsv'
-    #
-    # augment_context(filename, output_filename, params)
+    params = {
+        'n': 1,
+        'aug_p': 0.15,
+        'top_p': 3,
+        'top_k': 3,
+        'temperature': 0.9
+    }
+
+    filename = './data/mono/training/semcor/semcor_n_final.tsv'
+    output_filename = f'./data/mono/training/semcor/semcor_n_final_cbbase.tsv'
+
+    augment_context(filename, output_filename, params)
 
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
     # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
