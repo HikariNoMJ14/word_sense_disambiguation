@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from wordnet_api import get_hyponyms, get_hypernyms
 import nlpaug.augmenter.word as naw
+from collections import Counter
 
 nltk_stopwords = nltk.corpus.stopwords.words('english').append(r'".*"')
 
@@ -36,9 +37,9 @@ def create_context_aug(params):
     return naw.ContextualWordEmbsAug(
         model_path='distilbert-base-uncased',
         aug_p=params['aug_p'],
-        aug_max=params['aug_max'],
         top_k=params['top_k'],
         top_p=params['top_p'],
+        aug_max=None,
         device='cuda',
         temperature=params['temperature'],
         stopwords=nltk_stopwords,
@@ -62,8 +63,6 @@ def back_translate(aug, data, ignore_identical=False):
         return results
     else:
         return translated
-
-
 
 
 def add_context_words(aug, data, n=1):
@@ -103,9 +102,14 @@ def augment_context(filename, output_filename, context_params):
             g['sentence_aug'] = g['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
 
             for i, row in g.iterrows():
+                if i % 2 == 1:
+                    sentence = row['sentence']
+                else:
+                    sentence = row['sentence_aug']
+
                 f.write(row['target_id'] + '\t' +
                         str(row['label']) + '\t' +
-                        row['sentence_aug'] + '\t' +
+                        sentence + '\t' +
                         row['gloss'] + '\t' +
                         row['synset_id'] + '\n')
 
@@ -158,23 +162,81 @@ def add_hypernym_to_gloss(file_in, file_out):
                      + row['synset_id'] + '\n')
 
 
-if __name__ == "__main__":
+def back_translate_context():
+    df = pd.read_csv('./data/mono/training/semcor/semcor_n.tsv', delimiter='\t')
 
+    unique_sentence = df['sentence'].unique()[:10]
+    all_sentences = {}
+
+    aug = create_back_aug('de')
+
+    translated_sentences = aug.augment(list(unique_sentence))
+
+    len(translated_sentences)
+
+    for i, translated_sentence in enumerate(translated_sentences):
+        sentence = unique_sentence[i]
+
+        print(sentence)
+        print("*********")
+        print(translated_sentence)
+        print("------------------")
+
+        all_sentences[sentence] = translated_sentence
+
+    for i, row in df.iterrows():
+        tis = row.loc['target_index_start']
+        tie = row.loc['target_index_end']
+
+        try:
+            translated_sentence = np.array(all_sentences[row['sentence']].split(' '))
+        except:
+            break
+
+        target_word = row['sentence'].split(' ')[tis:tie]
+        # print(target_word)
+
+        if " ".join(target_word) in translated_sentence:
+            target_index_start = np.where(translated_sentence == target_word[0])[0]
+            target_index_end = np.where(translated_sentence == target_word[-1])[0]
+
+            if len(target_index_start) > 1 or len(target_index_end) > 1:
+                print(target_index_start, target_index_end)
+
+            new_row = row.copy()
+            new_row['sentence'] = " ".join(translated_sentence)
+            new_row['target_index_start'] = target_index_start[0]
+            new_row['target_index_end'] = target_index_end[0] + 1
+
+            df = df.append(new_row)
+
+    with open('./data/mono/training/semcor/semcor_n_context_bt.tsv', 'w') as fo:
+        fo.write('sentence\ttarget_index_start\ttarget_index_end\ttarget_id\ttarget_lemma\ttarget_pos\ttarget_pos\n')
+        for i, row in df.iterrows():
+            fo.write(row['sentence'] + '\t' \
+                     + str(row['target_index_start']) + '\t' \
+                     + str(row['target_index_end']) + '\t' \
+                     + row['target_id'] + '\t' \
+                     + row['target_lemma'] + '\t' \
+                     + row['target_pos'] + '\t' \
+                     + row['sense_key'] + '\n')
+
+
+if __name__ == "__main__":
     # -----------------------------------------------------------
 
-    params = {
-        'n': 1,
-        'aug_p': 0.15,
-        'aug_max': 3,
-        'top_p': 2,
-        'top_k': 2,
-        'temperature': 1
-    }
-
-    filename = './data/mono/training/semcor/semcor_n_bbase_de_final.tsv'
-    output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de_params_2.tsv'
-
-    augment_context(filename, output_filename, params)
+    # params = {
+    #     'n': 1,
+    #     'aug_p': 0.15,
+    #     'top_p': 4,
+    #     'top_k': 4,
+    #     'temperature': 1
+    # }
+    #
+    # filename = './data/mono/training/semcor/semcor_n_bbase_de_final.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_n_final_base_cbbase_de_params_4.tsv'
+    #
+    # augment_context(filename, output_filename, params)
 
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
     # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
@@ -232,3 +294,5 @@ if __name__ == "__main__":
     # file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate.tsv'
     #
     # add_hypernym_to_gloss(file_in, file_out)
+
+    back_translate_context()

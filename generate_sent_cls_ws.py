@@ -165,25 +165,25 @@ if __name__ == "__main__":
         # 'evaluation': ['ALL']
     }
     augment = [
-        # [],
+        [],
         # ['hyper'],
         # ['hypo'],
         # ['hyper', 'hypo']
         # ['hyper', 'hypo', 'bbase', 'bhyper']
-        ['bbase']
+        # ['bbase']
         # ['cbase']
     ]
 
     for mode in modes:
         for type, dataset in datasets.items():
             for ds in dataset:
-                file_name = f'./data/{mode}/{type}/{ds}/{ds}_n'
+                file_name = f'./data/{mode}/{type}/{ds}/{ds}_n_context_bt'
 
                 for augment_mode in augment:
                     output_final_name = file_name
                     for aug in augment_mode:
                         output_final_name = output_final_name + f'_{aug}'
-                    output_final_name = output_final_name + '_de_final'
+                    output_final_name = output_final_name + '_final'
 
                     n_rows = generate_auxiliary(
                         f'{file_name}.tsv',
