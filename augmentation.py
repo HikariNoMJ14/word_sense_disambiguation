@@ -47,6 +47,13 @@ def create_context_aug(params):
     )
 
 
+def create_context_wn_aug(params):
+    return naw.synonym.SynonymAug(
+        aug_p=params['aug_p'],
+        stopwords=nltk_stopwords
+    )
+
+
 def back_translate(aug, data, ignore_identical=False):
     translated = aug.augment(data)
 
@@ -109,6 +116,32 @@ def augment_context(filename, output_filename, context_params):
                         sentence + '\t' +
                         row['gloss'] + '\t' +
                         row['synset_id'] + '\n')
+
+
+def augment_context_wn(filename, output_filename, context_params):
+    df = pd.read_csv(filename, delimiter='\t')
+
+    n_sent = 1
+
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
+
+    with open(output_filename, 'w') as f:
+        f.write('target_id\tlabel\tsentence\tgloss\tsynset_id\n')
+
+        aug = create_context_wn_aug(context_params)
+
+        df['sentence_aug'] = aug.augment(list(df.sentence.values), n=n_sent)
+        df['sentence_aug'] = df['sentence_aug'].str.replace(r'" (.*) - (.*) "', r'" \1-\2 "')
+
+        for i, row in df.iterrows():
+            sentence = row['sentence_aug']
+
+            f.write(row['target_id'] + '\t' +
+                    str(row['label']) + '\t' +
+                    sentence + '\t' +
+                    row['gloss'] + '\t' +
+                    row['synset_id'] + '\n')
 
 
 def back_translate_gloss(filename, output_filename):
@@ -222,18 +255,18 @@ def back_translate_context():
 if __name__ == "__main__":
     # -----------------------------------------------------------
 
-    params = {
-        'n': 1,
-        'aug_p': 0.15,
-        'top_p': 3,
-        'top_k': 3,
-        'temperature': 0.9
-    }
-
-    filename = './data/mono/training/semcor/semcor_n_final.tsv'
-    output_filename = f'./data/mono/training/semcor/semcor_n_final_cbbase.tsv'
-
-    augment_context(filename, output_filename, params)
+    # params = {
+    #     'n': 1,
+    #     'aug_p': 0.15,
+    #     'top_p': 3,
+    #     'top_k': 3,
+    #     'temperature': 0.9
+    # }
+    #
+    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_n_final_cwbase.tsv'
+    #
+    # augment_context_wn(filename, output_filename, params)
 
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
     # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
@@ -242,11 +275,11 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    # file_1 = './data/mono/training/semcor/semcor_n_bbase_ru_final.tsv'
-    # file_2 = f'./data/mono/training/semcor/semcor_n_final_only_context1.tsv'
-    # file_out = f'./data/mono/training/semcor/semcor_n_final_base_bbase_cbase_ru.tsv'
-    #
-    # merge_dfs(file_1, file_2, file_out)
+    file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
+    file_2 = f'./data/mono/training/semcor/semcor_n_final_cwbase.tsv'
+    file_out = f'./data/mono/training/semcor/semcor_n_final_base_cwbase.tsv'
+
+    merge_dfs(file_1, file_2, file_out)
 
     # -----------------------------------------------------------
 
@@ -292,4 +325,4 @@ if __name__ == "__main__":
     #
     # add_hypernym_to_gloss(file_in, file_out)
 
-    back_translate_context()
+    # back_translate_context()
