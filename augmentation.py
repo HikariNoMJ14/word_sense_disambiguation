@@ -188,7 +188,7 @@ def add_hypernym_to_gloss(file_in, file_out):
             fo.write(row['target_id'] + '\t' \
                      + str(row['label']) + '\t' \
                      + row['sentence'] + '\t' \
-                     + row['gloss'] + ' ^ ' + hyper_gloss + '\t' \
+                     + row['gloss'] + ' [SEP] ' + hyper_gloss + '\t' \
                      + row['synset_id'] + '\n')
 
 
@@ -275,11 +275,11 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
-    file_2 = f'./data/mono/training/semcor/semcor_n_final_cwbase.tsv'
-    file_out = f'./data/mono/training/semcor/semcor_n_final_base_cwbase.tsv'
-
-    merge_dfs(file_1, file_2, file_out)
+    # file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
+    # file_2 = f'./data/mono/training/semcor/semcor_n_final_cwbase.tsv'
+    # file_out = f'./data/mono/training/semcor/semcor_n_final_base_cwbase.tsv'
+    #
+    # merge_dfs(file_1, file_2, file_out)
 
     # -----------------------------------------------------------
 
@@ -320,9 +320,9 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    # file_in = './data/mono/evaluation/ALL/ALL_n_final.tsv'
-    # file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate.tsv'
+    file_in = './data/mono/evaluation/ALL/ALL_n_final.tsv'
+    file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate_sep.tsv'
     #
-    # add_hypernym_to_gloss(file_in, file_out)
+    add_hypernym_to_gloss(file_in, file_out)
 
     # back_translate_context()
