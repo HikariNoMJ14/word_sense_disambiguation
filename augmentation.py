@@ -4,9 +4,48 @@ import numpy as np
 import pandas as pd
 from wordnet_api import get_hyponyms, get_hypernyms
 import nlpaug.augmenter.word as naw
-from collections import Counter
+from transformers import MarianMTModel, MarianTokenizer
 
-nltk_stopwords = nltk.corpus.stopwords.words('english').append(r'".*"')
+nltk_stopwords = nltk.corpus.stopwords.words('english')
+
+
+class MarianBT:
+
+    def __init__(self, language):
+        self.language = language
+
+        target_model_name = f'Helsinki-NLP/opus-mt-en-{self.language}'
+        self.target_tokenizer = MarianTokenizer.from_pretrained(target_model_name)
+        self.target_model = MarianMTModel.from_pretrained(target_model_name).to('cuda')
+
+        en_model_name = f'Helsinki-NLP/opus-mt-{self.language}-en'
+        self.en_tokenizer = MarianTokenizer.from_pretrained(en_model_name)
+        self.en_model = MarianMTModel.from_pretrained(en_model_name).to('cuda')
+
+    def augment(self, texts):
+        # Translate from source to target language
+        fr_texts = self.translate(texts, self.target_model, self.target_tokenizer, language=self.language, device='cuda')
+
+        # Translate from target language back to source language
+        back_translated_texts = self.translate(fr_texts, self.en_model, self.en_tokenizer, language='en', device='cuda')
+
+        return back_translated_texts
+
+    def translate(self, texts, model, tokenizer, language="fr", device='cuda'):
+        # Prepare the text data into appropriate format for the model
+        template = lambda text: f"{text}" if language == "en" else f">>{language}<< {text}"
+        src_texts = [template(text) for text in texts]
+
+        # Tokenize the texts
+        encoded = tokenizer.prepare_seq2seq_batch(src_texts, return_tensors='pt').to(device)
+
+        # Generate translation using model
+        translated = model.generate(**encoded).to(device)
+
+        # Convert the generated tokens indices back into text
+        translated_texts = tokenizer.batch_decode(translated, skip_special_tokens=True)
+
+        return translated_texts
 
 
 def add_hyper_hypo_glosses(synset_id, nym, n_hyper=3, n_hypo=3):
@@ -144,11 +183,14 @@ def augment_context_wn(filename, output_filename, context_params):
                     row['synset_id'] + '\n')
 
 
-def back_translate_gloss(filename, output_filename):
-    aug = create_back_aug('de')
-
+def back_translate_gloss(filename, output_filename, language='de', method="marian"):
     df = pd.read_csv(filename, delimiter='\t')
-    chunksize = 20000
+    chunksize = 100
+
+    if method == "method":
+        aug = create_back_aug(language)
+    else:
+        aug = MarianBT(language)
 
     if os.path.exists(output_filename):
         os.remove(output_filename)
@@ -192,13 +234,13 @@ def add_hypernym_to_gloss(file_in, file_out):
                      + row['synset_id'] + '\n')
 
 
-def back_translate_context():
+def back_translate_context(language='de'):
     df = pd.read_csv('./data/mono/training/semcor/semcor_n.tsv', delimiter='\t')
 
     unique_sentence = df['sentence'].unique()
     all_sentences = {}
 
-    aug = create_back_aug('de')
+    aug = create_back_aug(language)
 
     translated_sentences = aug.augment(list(unique_sentence))
 
@@ -269,15 +311,15 @@ if __name__ == "__main__":
     # augment_context_wn(filename, output_filename, params)
 
     # filename = './data/mono/training/semcor/semcor_n_final.tsv'
-    # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase_fr.tsv'
     #
-    # back_translate_gloss(filename, output_filename)
+    # back_translate_gloss(filename, output_filename, language='fr', method='marian')
 
     # -----------------------------------------------------------
 
     # file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
-    # file_2 = f'./data/mono/training/semcor/semcor_n_final_cwbase.tsv'
-    # file_out = f'./data/mono/training/semcor/semcor_n_final_base_cwbase.tsv'
+    # file_2 = f'./data/mono/training/semcor/semcor_n_final_bbase_fr.tsv'
+    # file_out = f'./data/mono/training/semcor/semcor_n_final_base_bbase_fr.tsv'
     #
     # merge_dfs(file_1, file_2, file_out)
 
@@ -320,9 +362,9 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    file_in = './data/mono/evaluation/ALL/ALL_n_final.tsv'
-    file_out = './data/mono/evaluation/ALL/ALL_n_final_hyper_concatenate_sep.tsv'
-    #
+    file_in = './data/mono/training/semcor/semcor_n_final_base_bbase_fr.tsv'
+    file_out = './data/mono/training/semcor/semcor_n_final_base_bbase_fr_hyper_concatenate.tsv'
+
     add_hypernym_to_gloss(file_in, file_out)
 
     # back_translate_context()
