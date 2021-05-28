@@ -37,7 +37,7 @@ def generate_auxiliary(train_file_name, train_file_final_name, mode, language, a
         already_seen = 0
 
         for i in range(len(train_data)):
-            assert train_data[i][-2] == "N" or train_data[i][-2] == POS_MAPPING['N']
+            # assert train_data[i][-2] == "N" or train_data[i][-2] == POS_MAPPING['N']
             orig_sentence = train_data[i][0].split(' ')
             start_id = int(train_data[i][1])
             end_id = int(train_data[i][2])
@@ -165,10 +165,10 @@ if __name__ == "__main__":
         # 'evaluation': ['ALL']
     }
     augment = [
-        [],
+        # [],
         # ['hyper'],
         # ['hypo'],
-        # ['hyper', 'hypo']
+        ['hyper', 'hypo']
         # ['hyper', 'hypo', 'bbase', 'bhyper']
         # ['bbase']
         # ['cbase']
@@ -177,13 +177,13 @@ if __name__ == "__main__":
     for mode in modes:
         for type, dataset in datasets.items():
             for ds in dataset:
-                file_name = f'./data/{mode}/{type}/{ds}/{ds}_n_context_bt'
+                file_name = f'./data/{mode}/{type}/{ds}/{ds}'
 
                 for augment_mode in augment:
-                    output_final_name = file_name
+                    output_final_name = file_name + '_final'
+
                     for aug in augment_mode:
                         output_final_name = output_final_name + f'_{aug}'
-                    output_final_name = output_final_name + '_final'
 
                     n_rows = generate_auxiliary(
                         f'{file_name}.tsv',

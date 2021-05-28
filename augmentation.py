@@ -185,12 +185,12 @@ def augment_context_wn(filename, output_filename, context_params):
 
 def back_translate_gloss(filename, output_filename, language='de', method="marian"):
     df = pd.read_csv(filename, delimiter='\t')
-    chunksize = 100
+    chunksize = 50
 
-    if method == "method":
-        aug = create_back_aug(language)
-    else:
+    if method == "marian":
         aug = MarianBT(language)
+    else:
+        aug = create_back_aug(language)
 
     if os.path.exists(output_filename):
         os.remove(output_filename)
@@ -224,8 +224,8 @@ def add_hypernym_to_gloss(file_in, file_out):
             hyper_gloss = add_hyper_hypo_glosses(row['synset_id'], 'hyper', n_hyper=1)
             hyper_gloss = hyper_gloss[0] if len(hyper_gloss) > 0 else ''
 
-            if i % 1000 == 0:
-                print(hyper_gloss)
+            # if i % 1000 == 0:
+            #     print(hyper_gloss)
 
             fo.write(row['target_id'] + '\t' \
                      + str(row['label']) + '\t' \
@@ -235,7 +235,7 @@ def add_hypernym_to_gloss(file_in, file_out):
 
 
 def back_translate_context(language='de'):
-    df = pd.read_csv('./data/mono/training/semcor/semcor_n.tsv', delimiter='\t')
+    df = pd.read_csv('./data/mono/training/semcor/semcor.tsv', delimiter='\t')
 
     unique_sentence = df['sentence'].unique()
     all_sentences = {}
@@ -282,7 +282,7 @@ def back_translate_context(language='de'):
 
             df = df.append(new_row)
 
-    with open('./data/mono/training/semcor/semcor_n_context_bt.tsv', 'w') as fo:
+    with open('./data/mono/training/semcor/semcor_context_bt.tsv', 'w') as fo:
         fo.write('sentence\ttarget_index_start\ttarget_index_end\ttarget_id\ttarget_lemma\ttarget_pos\ttarget_pos\n')
         for i, row in df.iterrows():
             fo.write(row['sentence'] + '\t' \
@@ -305,21 +305,22 @@ if __name__ == "__main__":
     #     'temperature': 0.9
     # }
     #
-    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
-    # output_filename = f'./data/mono/training/semcor/semcor_n_final_cwbase.tsv'
+    # filename = './data/mono/training/semcor/semcor_final_base.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_final_cwbase.tsv'
     #
     # augment_context_wn(filename, output_filename, params)
 
-    # filename = './data/mono/training/semcor/semcor_n_final.tsv'
-    # output_filename = f'./data/mono/training/semcor/semcor_n_final_bbase_fr.tsv'
+    # language = 'ru'
+    # filename = 'data/mono/training/semcor/semcor_final_base.tsv'
+    # output_filename = f'./data/mono/training/semcor/semcor_final_bbase_{language}.tsv'
     #
-    # back_translate_gloss(filename, output_filename, language='fr', method='marian')
+    # back_translate_gloss(filename, output_filename, language=language, method='marian')
 
     # -----------------------------------------------------------
 
-    # file_1 = './data/mono/training/semcor/semcor_n_final.tsv'
-    # file_2 = f'./data/mono/training/semcor/semcor_n_final_bbase_fr.tsv'
-    # file_out = f'./data/mono/training/semcor/semcor_n_final_base_bbase_fr.tsv'
+    # file_1 = './data/mono/training/semcor/semcor_final_base.tsv'
+    # file_2 = f'./data/mono/training/semcor/semcor_final_cbase.tsv'
+    # file_out = f'./data/mono/training/semcor/semcor_final_base_cbase.tsv'
     #
     # merge_dfs(file_1, file_2, file_out)
 
@@ -362,9 +363,9 @@ if __name__ == "__main__":
 
     # -----------------------------------------------------------
 
-    file_in = './data/mono/training/semcor/semcor_n_final_base_bbase_fr.tsv'
-    file_out = './data/mono/training/semcor/semcor_n_final_base_bbase_fr_hyper_concatenate.tsv'
+    # file_in = './data/mono/training/semcor/semcor_final_base.tsv'
+    # file_out = './data/mono/training/semcor/semcor_final_base_hyper_concatenate.tsv'
+    #
+    # add_hypernym_to_gloss(file_in, file_out)
 
-    add_hypernym_to_gloss(file_in, file_out)
-
-    # back_translate_context()
+    back_translate_context()
